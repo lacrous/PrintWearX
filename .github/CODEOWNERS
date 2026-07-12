@@ -1,0 +1,23 @@
+# CODEOWNERS
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners.
+# Order matters: later patterns take precedence.
+
+# Default owners for everything
+*                           @hassan-nurovia
+
+# Frontend pages need review from frontend lead
+/src/app/                   @hassan-nurovia
+/src/components/            @hassan-nurovia
+/src/views/                 @hassan-nurovia
+
+# Design system changes need extra scrutiny
+/src/app/globals.css        @hassan-nurovia
+/tailwind.config.*          @hassan-nurovia
+
+# Security-sensitive files
+/src/lib/auth-client.ts     @hassan-nurovia
+/src/middleware.ts          @hassan-nurovia
+/src/app/actions/           @hassan-nurovia
+/.env.example               @hassan-nurovia
+/next.config.mjs            @hassan-nurovia

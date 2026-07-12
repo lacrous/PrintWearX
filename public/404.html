@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#007AFF" />
+  <title>PrintWearX — Loading…</title>
+  <style>
+    /* Inline critical CSS so the 404 page is a tiny asset (no external
+       request) — important because some hosts (raw S3) don't even
+       serve 404.html with the right content-type. */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8f9fa 0%, #ebf5ff 100%);
+      color: #212529;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    html.dark body {
+      background: linear-gradient(135deg, #0a0a0a 0%, #00141a 100%);
+      color: #f5f5f5;
+    }
+    .box {
+      max-width: 420px;
+      text-align: center;
+      padding: 32px 24px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(0, 122, 255, 0.2);
+      border-top-color: #007AFF;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      animation: spin 800ms linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 18px; font-weight: 600; opacity: 0.7; }
+    .error { display: none; }
+    .error.shown { display: block; }
+    .error-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      margin-bottom: 20px;
+    }
+    html.dark .error-icon { color: #fbbf24; }
+    .error h1 { font-size: 24px; margin-bottom: 8px; opacity: 1; }
+    .error p { opacity: 0.7; font-size: 14px; margin-bottom: 24px; }
+    .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 20px;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: transform 80ms ease-out;
+    }
+    a.btn:active { transform: scale(0.97); }
+    a.btn-primary { background: #007AFF; color: white; }
+    a.btn-secondary {
+      background: white;
+      color: #212529;
+      border: 1px solid #dee2e6;
+    }
+    html.dark a.btn-secondary {
+      background: #0f0f0f;
+      color: #f5f5f5;
+      border-color: #212529;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner" id="spinner"></div>
+    <h1 id="status">Loading…</h1>
+    <div class="error" id="error">
+      <div id="error-icon" class="error-icon" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+      </div>
+      <h1 id="error-title">Page not found</h1>
+      <p id="error-msg">We couldn't find <code id="path"></code>.</p>
+      <div class="actions" id="actions">
+        <a class="btn btn-primary" id="primary-action" href="/">Back to home</a>
+        <a class="btn btn-secondary" id="secondary-action" href="/shop">Browse shop</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Smart 404 router.
+     *
+     * The site is built as a static export with trailingSlash: true, so
+     * every route lives at /path/to/route/index.html. Different hosts
+     * handle this differently:
+     *
+     *   1. Vercel, Netlify, Cloudflare Pages: auto-serve index.html
+     *      for both /path and /path/
+     *   2. Raw S3, GitHub Pages (no custom domain), some CDNs: only
+     *      serve index.html for the trailing-slash version
+     *   3. Truly broken: serve a 404 (we land here)
+     *
+     * This router handles ALL three:
+     *
+     *   1. Try the trailing-slash version of the URL via fetch
+     *   2. If that fails or is itself a 404, try the no-slash variant
+     *   3. If both fail, show the error state
+     *
+     * The URL bar stays clean (no trailing slash, no .html) so links,
+     * refresh, and bookmarks all work as the SPA expects.
+     */
+    (function () {
+      var path = window.location.pathname;
+      var search = window.location.search || '';
+      var hash = window.location.hash || '';
+      if (path === '/' || path === '/index.html' || path === '') {
+        window.location.replace('/');
+        return;
+      }
+      var cleanPath = path.replace(/\/+$/, '');
+
+      // Check if a fetched HTML is actually a 404 page (i.e. contains
+      // the 'Page not found' marker we render in the error state).
+      function is404Page(html) {
+        return /Page not found/i.test(html) || /class="error shown"/i.test(html);
+      }
+
+      // Cache-bust so we never get a stale 404 from CDN cache.
+      var bust = '?pwx_t=' + Date.now();
+
+      function tryUrl(url) {
+        return fetch(url + bust, { cache: 'no-cache' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('status ' + r.status);
+            return r.text();
+          })
+          .then(function (html) {
+            if (is404Page(html)) throw new Error('still 404');
+            return html;
+          });
+      }
+
+      function renderPage(html) {
+        document.open();
+        document.write(html);
+        document.close();
+        try { window.history.replaceState({}, '', cleanPath + search + hash); } catch (e) {}
+      }
+
+      // Try both variants in order. Stop at the first that works.
+      tryUrl(cleanPath + '/index.html')
+        .then(renderPage)
+        .catch(function () {
+          return tryUrl(cleanPath + 'index.html');
+        })
+        .then(renderPage)
+        .catch(function () {
+          // Both failed — show the error state, customized for the
+          // type of path (admin vs storefront).
+          var sp = document.getElementById('spinner');
+          var st = document.getElementById('status');
+          var er = document.getElementById('error');
+          var pa = document.getElementById('path');
+          var et = document.getElementById('error-title');
+          var em = document.getElementById('error-msg');
+          var pa2 = document.getElementById('primary-action');
+          var sa = document.getElementById('secondary-action');
+          if (sp) sp.style.display = 'none';
+          if (st) st.style.display = 'none';
+          if (er) er.classList.add('shown');
+          if (pa) pa.textContent = path;
+          if (cleanPath.indexOf('/admin') === 0) {
+            if (et) et.textContent = 'Admin page not found';
+            if (em) em.innerHTML = 'The page you were looking for doesn’t exist. It may have been deleted, renamed, or the link is incorrect.';
+            if (pa2) { pa2.textContent = 'Back to dashboard'; pa2.setAttribute('href', '/admin'); }
+            if (sa)  { sa.textContent  = 'Browse products'; sa.setAttribute('href', '/admin/products'); }
+            document.title = 'Admin · Page not found';
+          } else {
+            if (et) et.textContent = 'Page not found';
+            if (em) em.innerHTML = 'We couldn’t find <code>' + path + '</code>. It might have been moved or doesn’t exist.';
+            if (pa2) { pa2.textContent = 'Back home'; pa2.setAttribute('href', '/'); }
+            if (sa)  { sa.textContent  = 'Browse shop'; sa.setAttribute('href', '/shop'); }
+            document.title = 'Page not found';
+          }
+        });
+    })();
+  </script>
+</body>
+</html>

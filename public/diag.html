@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PrintWearX — Diagnostic</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 720px; margin: 40px auto; padding: 20px; background: #f8f9fa; }
+  pre { background: #0f0f0f; color: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  h1 { margin-bottom: 4px; }
+  p { color: #495057; line-height: 1.6; }
+  .label { color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .card { background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .val { font-family: monospace; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>PrintWearX — 404 diagnostic</h1>
+<p>Open this page in your browser and copy the output below.</p>
+
+<div class="card">
+  <div class="label">URL</div>
+  <div class="val" id="url">…</div>
+</div>
+<div class="card">
+  <div class="label">window.location.pathname</div>
+  <div class="val" id="path">…</div>
+</div>
+<div class="card">
+  <div class="label">localStorage[printwearx_admin]</div>
+  <div class="val" id="admin">…</div>
+</div>
+<div class="card">
+  <div class="label">localStorage[printwearx_admin_session]</div>
+  <div class="val" id="adminSession">…</div>
+</div>
+<div class="card">
+  <div class="label">sessionStorage[pwx_last_path]</div>
+  <div class="val" id="lastPath">…</div>
+</div>
+<div class="card">
+  <div class="label">document.referrer</div>
+  <div class="val" id="ref">…</div>
+</div>
+<div class="card">
+  <div class="label">Build version</div>
+  <div class="val">v3.0.6 — synchronous admin-context detection</div>
+</div>
+<div class="card">
+  <div class="label">detectAdminContext() result</div>
+  <div class="val" id="detected">…</div>
+</div>
+
+<script>
+function detectAdminContext() {
+  try {
+    const p = window.location.pathname || '/';
+    if (p.startsWith('/admin')) return true;
+    if (p === '/404' || p === '/404/') {
+      try {
+        const saved = sessionStorage.getItem('pwx_last_path');
+        if (saved && saved.startsWith('/admin')) return true;
+      } catch (e) {}
+      try {
+        const ref = document.referrer || '';
+        if (ref && new URL(ref).pathname.startsWith('/admin')) return true;
+      } catch (e) {}
+    }
+    try {
+      if (localStorage.getItem('printwearx_admin') === '1') return true;
+    } catch (e) {}
+  } catch (e) {}
+  return false;
+}
+
+document.getElementById('url').textContent = window.location.href;
+document.getElementById('path').textContent = window.location.pathname;
+document.getElementById('admin').textContent = localStorage.getItem('printwearx_admin') || '(empty)';
+document.getElementById('adminSession').textContent = (localStorage.getItem('printwearx_admin_session') || '(empty)').substring(0, 80);
+document.getElementById('lastPath').textContent = sessionStorage.getItem('pwx_last_path') || '(empty)';
+document.getElementById('ref').textContent = document.referrer || '(empty)';
+document.getElementById('detected').textContent = detectAdminContext() ? 'ADMIN ✓' : 'STOREFRONT ✗';
+</script>
+</body>
+</html>

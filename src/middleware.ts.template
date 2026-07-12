@@ -1,0 +1,45 @@
+// PrintWearX — Edge middleware (NODE-RUNTIME ONLY)
+//
+// This file is intentionally not named `middleware.ts` because it conflicts
+// with `output: "export"`. To use it:
+//   1. Rename to `middleware.ts`
+//   2. Remove `output: "export"` from `next.config.mjs`
+//   3. Deploy to a Node runtime (Vercel, your own Node server, etc.)
+//
+// It protects /checkout, /cart, /order-success, /account routes via
+// HTTP-only session cookie. For static export, the same protection is
+// implemented client-side in the AuthCard component (redirects to /login
+// when calling a protected server action without a session).
+//
+// In production swap the userDb in app/actions/auth.ts for your real
+// auth provider (NextAuth, Clerk, Supabase Auth, etc.).
+
+import { NextResponse, type NextRequest } from "next/server";
+
+const PROTECTED_PATTERNS = [
+  /^\/checkout(\/|$)/,
+  /^\/cart(\/|$)/,
+  /^\/order-success(\/|$)/,
+  /^\/account(\/|$)/,
+];
+
+const SESSION_COOKIE = "printwearx_session";
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const isProtected = PROTECTED_PATTERNS.some((p) => p.test(pathname));
+  if (!isProtected) return NextResponse.next();
+
+  const session = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!session) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/checkout/:path*", "/cart/:path*", "/order-success/:path*", "/account/:path*"],
+};

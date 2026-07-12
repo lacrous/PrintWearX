@@ -1,0 +1,21 @@
+# Netlify _redirects file
+#
+# This file lets the project work on Netlify without a netlify.toml.
+# It tells Netlify to serve index.html for any directory URL.
+# (Vercel, Cloudflare Pages, etc. all do this by default; Netlify
+# needs the explicit directive.)
+#
+# Format: from  to  [status]
+#
+# IMPORTANT: With output: "export" + trailingSlash: true, every route
+# already has a /path/index.html file, so the default behavior is to
+# serve the actual file when it exists. These rules are fallback safety
+# nets for edge cases.
+
+# 404 page (the smart router)
+# Serve the smart 404.html for any path that doesn't have a real file.
+/*    /404.html   404
+
+# Optional: force HTTPS (uncomment if your host allows)
+/# Force HTTPS
+# http://*   https://:splat  301!

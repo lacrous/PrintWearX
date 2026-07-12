@@ -1,0 +1,60 @@
+# Caddyfile for Caddy v2
+#
+# Drop the contents of this file into a Caddyfile or paste into the
+# Caddy JSON config. Use this if you're hosting on a VPS with Caddy
+# (or any Caddy-compatible host like Apache-with-rewrites, but Caddy
+# is what we recommend for this site).
+#
+# With `output: "export"` and `trailingSlash: true`, every route
+# already exists as a directory with index.html. The defaults below
+# just add the standard security headers and long-cache static assets.
+
+# The main site block. Replace :8080 with your domain.
+:8080 {
+    root * /srv/printwearx
+
+    # Security + privacy headers, applied to every response
+    header {
+        # Prevent MIME-type sniffing
+        X-Content-Type-Options "nosniff"
+        # Block embedding in iframes (clickjacking protection)
+        X-Frame-Options "DENY"
+        # Only send full origin on same-protocol, full URL on downgrades
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Disable APIs we don't need
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        # Modern HTTPS hint
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+
+    # Long-cache hashed static assets
+    @hashed_assets path /_next/*
+    header @hashed_assets Cache-Control "public, max-age=31536000, immutable"
+
+    # Long-cache other static files
+    @static_assets {
+        path *.js *.css *.woff2 *.webp *.jpg *.png *.svg
+    }
+    header @static_assets Cache-Control "public, max-age=31536000, immutable"
+
+    # Short-cache HTML so updates ship fast
+    @html path *.html /
+    header @html Cache-Control "public, max-age=0, must-revalidate"
+
+    # Serve index.html for directory URLs
+    @index path /
+    rewrite @index /index.html
+
+    # The default file server takes care of the rest. Because every
+    # route is a directory with index.html inside, this works for all
+    # clean URLs (/admin/products/new → /admin/products/new/index.html).
+    file_server
+
+    # SPA-style fallback: if the file doesn't exist, serve the smart 404
+    # (which then does JS-based routing to the right index.html)
+    @notfound {
+        not path /_next/*
+        not path *.js *.css *.woff2 *.webp *.jpg *.png *.svg *.ico
+    }
+    rewrite @notfound /404.html
+}

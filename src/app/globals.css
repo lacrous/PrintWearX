@@ -1,0 +1,423 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand color: matches original PrintWearX blue */
+  --color-primary-50: #ebf5ff;
+  --color-primary-100: #d6e9ff;
+  --color-primary-200: #add3ff;
+  --color-primary-300: #85bdff;
+  --color-primary-400: #5ca7ff;
+  --color-primary-500: #007aff;
+  --color-primary-600: #0056b3;
+  --color-primary-700: #004080;
+  --color-primary-800: #002a4d;
+  --color-primary-900: #00141a;
+
+  /* Neutral palette */
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #ffffff;
+  --color-neutral-200: #e9ecef;
+  --color-neutral-300: #dee2e6;
+  --color-neutral-400: #ced4da;
+  --color-neutral-500: #6c757d;
+  --color-neutral-600: #495057;
+  --color-neutral-700: #343a40;
+  --color-neutral-800: #212529;
+  --color-neutral-900: #000000;
+
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-error: #dc3545;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+
+  --shadow-glow: 0 0 30px rgba(0, 122, 255, 0.35);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-neutral-200);
+  }
+  html {
+    scroll-behavior: smooth;
+    /* Avoid jarring transitions on initial mount */
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html.dark * {
+    border-color: var(--color-neutral-800);
+  }
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* smooth theme-color-aware background */
+  }
+  html.dark body {
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+  }
+
+  /* Safe area utilities for iOS notch */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  /* Make every interactive element show a pointer cursor by default.
+     Tailwind 4 doesn't ship a base rule for this, so we add it here.
+     Disabled elements still show the not-allowed cursor. */
+  a:not([class*="cursor-"]):not([disabled]),
+  button:not([class*="cursor-"]):not([disabled]),
+  [role="button"]:not([class*="cursor-"]):not([disabled]),
+  [role="link"]:not([class*="cursor-"]):not([disabled]),
+  [role="tab"]:not([class*="cursor-"]):not([disabled]),
+  [role="menuitem"]:not([class*="cursor-"]):not([disabled]),
+  [role="checkbox"]:not([class*="cursor-"]):not([disabled]),
+  [role="radio"]:not([class*="cursor-"]):not([disabled]),
+  [role="switch"]:not([class*="cursor-"]):not([disabled]),
+  [role="option"]:not([class*="cursor-"]):not([disabled]),
+  [tabindex]:not([tabindex="-1"]):not([class*="cursor-"]):not([disabled]),
+  label[for]:not([class*="cursor-"]):not([disabled]) {
+    cursor: pointer;
+  }
+  [disabled],
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+@layer utilities {
+  .glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .dark .glass {
+    background: rgba(15, 15, 15, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: 999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-500);
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-700);
+  }
+
+  /* Animated gradient text */
+  .gradient-text {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-primary-500),
+      var(--color-primary-300),
+      var(--color-primary-500)
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift 6s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Route transition — pure CSS, runs once on mount per template.tsx remount.
+   IMPORTANT: do NOT use transform here, because any transform on this
+   element creates a containing block that traps position:fixed descendants
+   (the mobile bottom nav, the announcement bar, etc.) inside it instead of
+   the viewport. */
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.route-fade {
+  animation: route-fade-in 160ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-fade {
+    animation: none;
+  }
+}
+
+/* Theme toggle icon swap — pure CSS keyframe triggered by React key change */
+@keyframes theme-icon-in {
+  from {
+    transform: rotate(-90deg) scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.theme-icon-anim {
+  animation: theme-icon-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Mobile nav drawer + backdrop (replaces framer-motion) */
+@keyframes mobile-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mobile-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: mobile-backdrop-in 160ms ease-out both;
+}
+
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  height: 100%;
+  width: min(90%, 380px);
+  background: white;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: mobile-drawer-in 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+html.dark .mobile-nav-drawer {
+  background: #0a0a0a;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-backdrop,
+  .mobile-nav-drawer {
+    animation: none;
+  }
+}
+
+/* Toast slide-in (replaces framer-motion) */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-in {
+  animation: toast-in 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Auth card stagger-in */
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.auth-card-anim {
+  animation: auth-card-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes error-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-fade-in {
+  animation: error-fade-in 200ms ease-out both;
+}
+
+@keyframes trust-row-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.trust-row-fade {
+  animation: trust-row-fade 300ms ease-out 300ms both;
+}
+
+/* Product card stagger-in (replaces framer-motion) */
+@keyframes product-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.product-card-anim {
+  animation: product-card-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.product-card-anim:hover {
+  transform: translateY(-4px);
+  transition: transform 220ms ease-out;
+}
+
+/* PWA install pop-up */
+@keyframes pwa-install-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pwa-install-anim {
+  animation: pwa-install-in 360ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Hide scrollbar but keep scrolling (used in category strip + mobile menus) */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe-area padding helper for bottom nav on iOS */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Command palette */
+@keyframes cmd-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cmd-palette-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+.cmd-backdrop-in {
+  animation: cmd-backdrop-in 120ms ease-out both;
+}
+.cmd-palette-in {
+  animation: cmd-palette-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Override the default -translate-x-1/2 so animation transform works.
+     We use translate(-50%, ...) inside the keyframes so it's fine. */
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmd-backdrop-in,
+  .cmd-palette-in {
+    animation: none;
+  }
+}
+
+/* Notification panel */
+@keyframes notif-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.notif-pop-in {
+  animation: notif-pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
